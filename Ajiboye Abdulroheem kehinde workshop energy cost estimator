@@ -1,0 +1,142 @@
+"""
+Workshop Energy Cost Estimator
+------------------------------
+The user enters each machine's name, power (watts) and hours used per day.
+The program calculates daily and monthly energy (kWh) and the cost at the
+user's local tariff.
+
+My own twist: the program shows each machine's share of the total energy,
+finds the machine that uses the most energy, and gives a saving tip if one
+machine uses more than 40% of the total.
+"""
+
+DAYS_IN_MONTH = 30  # we assume 30 days in a month
+
+
+def get_positive_number(message, whole_number=False):
+    """Keep asking until the user types a valid number greater than zero.
+    Returns the number as an int or a float."""
+    while True:
+        text = input(message).strip()
+        try:
+            # Convert the typed text to a number
+            if whole_number:
+                value = int(text)
+            else:
+                value = float(text)
+        except ValueError:
+            print("  Invalid input. Please type a number (e.g. 5 or 2.5).")
+            continue
+
+        # Reject zero and negative numbers
+        if value <= 0:
+            print("  The number must be greater than zero.")
+        else:
+            return value
+
+
+def get_hours(message):
+    """Ask for hours per day. Must be more than 0 and not more than 24."""
+    while True:
+        hours = get_positive_number(message)
+        if hours > 24:
+            print("  A day has only 24 hours. Try again.")
+        else:
+            return hours
+
+
+def daily_energy_kwh(power_watts, hours_per_day):
+    """Return the energy used in one day in kilowatt-hours (kWh).
+    Formula: kWh = (watts x hours) / 1000"""
+    return (power_watts * hours_per_day) / 1000
+
+
+def main():
+    print("=" * 50)
+    print("   WORKSHOP ENERGY COST ESTIMATOR")
+    print("=" * 50)
+
+    # Lists to store the details of every machine
+    names = []
+    powers = []
+    hours_list = []
+    daily_kwh_list = []
+
+    # Ask how many machines there are
+    count = get_positive_number("How many machines do you have? ", whole_number=True)
+
+    # Loop once for each machine and collect its details
+    for i in range(count):
+        print(f"\n--- Machine {i + 1} of {count} ---")
+
+        name = input("Machine name: ").strip()
+        if name == "":
+            name = f"Machine {i + 1}"  # use a default name if left empty
+
+        power = get_positive_number("Power in watts (W): ")
+        hours = get_hours("Hours used per day: ")
+
+        # Calculate and store the daily energy for this machine
+        kwh = daily_energy_kwh(power, hours)
+
+        names.append(name)
+        powers.append(power)
+        hours_list.append(hours)
+        daily_kwh_list.append(kwh)
+
+    # Ask for the local electricity tariff
+    print()
+    tariff = get_positive_number("Your tariff (cost per kWh, e.g. 209.5): ")
+    currency = input("Currency symbol (press Enter for N): ").strip()
+    if currency == "":
+        currency = "N"
+
+    # Totals
+    total_daily_kwh = sum(daily_kwh_list)
+    total_monthly_kwh = total_daily_kwh * DAYS_IN_MONTH
+    daily_cost = total_daily_kwh * tariff
+    monthly_cost = total_monthly_kwh * tariff
+
+    # Results table
+    print("\n" + "=" * 50)
+    print("   RESULTS")
+    print("=" * 50)
+    print(f"{'Machine':<16}{'Watts':>8}{'Hrs/day':>9}{'kWh/day':>10}{'Share':>8}")
+    print("-" * 51)
+
+    # Loop through the lists to print one row per machine
+    for i in range(count):
+        share = (daily_kwh_list[i] / total_daily_kwh) * 100
+        print(f"{names[i][:15]:<16}{powers[i]:>8.1f}{hours_list[i]:>9.1f}"
+              f"{daily_kwh_list[i]:>10.2f}{share:>7.1f}%")
+
+    print("-" * 51)
+    print(f"Total daily energy   : {total_daily_kwh:.2f} kWh")
+    print(f"Total monthly energy : {total_monthly_kwh:.2f} kWh ({DAYS_IN_MONTH} days)")
+    print(f"Daily cost           : {currency}{daily_cost:,.2f}")
+    print(f"Monthly cost         : {currency}{monthly_cost:,.2f}")
+
+    # ---- My own twist: find the biggest energy user and give advice ----
+    biggest_index = daily_kwh_list.index(max(daily_kwh_list))
+    biggest_name = names[biggest_index]
+    biggest_share = (daily_kwh_list[biggest_index] / total_daily_kwh) * 100
+    biggest_monthly_cost = daily_kwh_list[biggest_index] * DAYS_IN_MONTH * tariff
+
+    print("\n--- Biggest energy user ---")
+    print(f"{biggest_name} uses {biggest_share:.1f}% of your energy "
+          f"and costs about {currency}{biggest_monthly_cost:,.2f} per month.")
+
+    # Decide which message to show using if/elif/else
+    if biggest_share > 40:
+        saving = biggest_monthly_cost * 0.10
+        print(f"Tip: this machine dominates your bill. Using it 10% less "
+              f"would save about {currency}{saving:,.2f} a month.")
+    elif biggest_share > 25:
+        print("Tip: this machine is a major cost. Switch it off when not in use.")
+    else:
+        print("Good: your energy use is spread fairly evenly across machines.")
+
+
+# Run the program
+if __name__ == "__main__":
+    main()
